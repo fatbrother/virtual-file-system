@@ -190,3 +190,94 @@ func TestStorage_ListFolders(t *testing.T) {
 		})
 	}
 }
+func TestStorage_CreateFile(t *testing.T) {
+	s := NewStorage()
+	_ = s.AddUser("testuser")
+	_ = s.CreateFolder("testuser", "documents", "My documents")
+
+	tests := []struct {
+		name        string
+		username    string
+		folderName  string
+		fileName    string
+		description string
+		wantErr     bool
+	}{
+		{"Valid file", "testuser", "documents", "file1.txt", "File description", false},
+		{"Duplicate file", "testuser", "documents", "file1.txt", "Another description", true},
+		{"Invalid file name", "testuser", "documents", "invalid/file", "Invalid name", true},
+		{"Non-existent folder", "testuser", "nonexistent", "file.txt", "Description", true},
+		{"Non-existent user", "nonexistent", "documents", "file.txt", "Description", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := s.CreateFile(tt.username, tt.folderName, tt.fileName, tt.description)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Storage.CreateFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestStorage_DeleteFile(t *testing.T) {
+	s := NewStorage()
+	_ = s.AddUser("testuser")
+	_ = s.CreateFolder("testuser", "documents", "My documents")
+	_ = s.CreateFile("testuser", "documents", "file1.txt", "File description")
+
+	tests := []struct {
+		name       string
+		username   string
+		folderName string
+		fileName   string
+		wantErr    bool
+	}{
+		{"Existing file", "testuser", "documents", "file1.txt", false},
+		{"Non-existent file", "testuser", "documents", "nonexistent.txt", true},
+		{"Non-existent folder", "testuser", "nonexistent", "file.txt", true},
+		{"Non-existent user", "nonexistent", "documents", "file.txt", true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := s.DeleteFile(tt.username, tt.folderName, tt.fileName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Storage.DeleteFile() error = %v, wantErr %v", err, tt.wantErr)
+			}
+		})
+	}
+}
+
+func TestStorage_ListFiles(t *testing.T) {
+	s := NewStorage()
+	_ = s.AddUser("testuser")
+	_ = s.CreateFolder("testuser", "documents", "My documents")
+	_ = s.CreateFile("testuser", "documents", "file1.txt", "File description")
+	_ = s.CreateFile("testuser", "documents", "file2.txt", "Another file description")
+
+	tests := []struct {
+		name       string
+		username   string
+		folderName string
+		want       []string
+		wantErr    bool
+	}{
+		{"Existing folder", "testuser", "documents", []string{"file1.txt", "file2.txt"}, false},
+		{"Non-existent folder", "testuser", "nonexistent", nil, true},
+		{"Non-existent user", "nonexistent", "documents", nil, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := s.ListFiles(tt.username, tt.folderName)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("Storage.ListFiles() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("Storage.ListFiles() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
