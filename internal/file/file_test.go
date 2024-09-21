@@ -11,7 +11,7 @@ func TestNewFile(t *testing.T) {
 		description	string
 		wantErr		bool
 	}{
-		{"Valid file name", "validfile", "A valid file", false},
+		{"Valid file name", "validfile.txt", "A valid file", false},
 		{"Empty file name", "", "Empty file", true},
 		{"Too long file name", "thisfilenameiswaytoolongandshouldfailvalidation_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt", "Too long file name", true},
 		{"Invalid characters", "**&&^%$#@!", "Invalid file name", true},
