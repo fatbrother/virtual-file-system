@@ -3,6 +3,7 @@ package storage
 import (
 	"reflect"
 	"testing"
+	"time"
 	"sort"
 )
 
@@ -165,21 +166,27 @@ func TestStorage_ListFolders(t *testing.T) {
 	s := NewStorage()
 	_ = s.AddUser("testuser")
 	_ = s.CreateFolder("testuser", "documents", "My documents")
+	time.Sleep(1 * time.Second) // 確保創建時間不同
 	_ = s.CreateFolder("testuser", "pictures", "My pictures")
 
 	tests := []struct {
-		name     string
-		username string
-		want     []string
-		wantErr  bool
+		name      string
+		username  string
+		sortField string
+		sortOrder string
+		want      []string
+		wantErr   bool
 	}{
-		{"Existing user", "testuser", []string{"documents", "pictures"}, false},
-		{"Non-existent user", "nonexistent", nil, true},
+		{"Sort by name asc", "testuser", "name", "asc", []string{"documents", "pictures"}, false},
+		{"Sort by name desc", "testuser", "name", "desc", []string{"pictures", "documents"}, false},
+		{"Sort by created asc", "testuser", "created", "asc", []string{"documents", "pictures"}, false},
+		{"Sort by created desc", "testuser", "created", "desc", []string{"pictures", "documents"}, false},
+		{"Non-existent user", "nonexistent", "name", "asc", nil, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := s.ListFolders(tt.username)
+			got, err := s.ListFolders(tt.username, tt.sortField, tt.sortOrder)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Storage.ListFolders() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -190,6 +197,7 @@ func TestStorage_ListFolders(t *testing.T) {
 		})
 	}
 }
+
 func TestStorage_CreateFile(t *testing.T) {
 	s := NewStorage()
 	_ = s.AddUser("testuser")
@@ -254,23 +262,29 @@ func TestStorage_ListFiles(t *testing.T) {
 	_ = s.AddUser("testuser")
 	_ = s.CreateFolder("testuser", "documents", "My documents")
 	_ = s.CreateFile("testuser", "documents", "file1.txt", "File description")
+	time.Sleep(1 * time.Second) // 確保創建時間不同
 	_ = s.CreateFile("testuser", "documents", "file2.txt", "Another file description")
 
 	tests := []struct {
 		name       string
 		username   string
 		folderName string
+		sortField  string
+		sortOrder  string
 		want       []string
 		wantErr    bool
 	}{
-		{"Existing folder", "testuser", "documents", []string{"file1.txt", "file2.txt"}, false},
-		{"Non-existent folder", "testuser", "nonexistent", nil, true},
-		{"Non-existent user", "nonexistent", "documents", nil, true},
+		{"Sort by name asc", "testuser", "documents", "name", "asc", []string{"file1.txt", "file2.txt"}, false},
+		{"Sort by name desc", "testuser", "documents", "name", "desc", []string{"file2.txt", "file1.txt"}, false},
+		{"Sort by created asc", "testuser", "documents", "created", "asc", []string{"file1.txt", "file2.txt"}, false},
+		{"Sort by created desc", "testuser", "documents", "created", "desc", []string{"file2.txt", "file1.txt"}, false},
+		{"Non-existent folder", "testuser", "nonexistent", "name", "asc", nil, true},
+		{"Non-existent user", "nonexistent", "documents", "name", "asc", nil, true},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := s.ListFiles(tt.username, tt.folderName)
+			got, err := s.ListFiles(tt.username, tt.folderName, tt.sortField, tt.sortOrder)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Storage.ListFiles() error = %v, wantErr %v", err, tt.wantErr)
 				return
