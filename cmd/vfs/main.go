@@ -112,6 +112,61 @@ func main() {
 					fmt.Printf("- %s\n", folder)
 				}
 			}
+		case "create-file":
+			if len(args) < 4 {
+				fmt.Println("Usage: create-file <username> <foldername> <filename> <description>")
+				continue
+			}
+			username, folderName, fileName := args[1], args[2], args[3]
+			description := strings.Join(args[4:], " ")
+			err := s.CreateFile(username, folderName, fileName, description)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+			} else {
+				fmt.Printf("File '%s' created successfully in folder '%s' for user '%s'\n", fileName, folderName, username)
+			}
+		case "delete-file":
+			if len(args) != 4 {
+				fmt.Println("Usage: delete-file <username> <foldername> <filename>")
+				continue
+			}
+			username, folderName, fileName := args[1], args[2], args[3]
+			err := s.DeleteFile(username, folderName, fileName)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+			} else {
+				fmt.Printf("File '%s' deleted successfully from folder '%s' for user '%s'\n", fileName, folderName, username)
+			}
+		case "list-files":
+			if len(args) != 3 {
+				fmt.Println("Usage: list-files <username> <foldername>")
+				continue
+			}
+			username, folderName := args[1], args[2]
+			files, err := s.ListFiles(username, folderName)
+			if err != nil {
+				fmt.Printf("Error: %v\n", err)
+			} else if len(files) == 0 {
+				fmt.Printf("No files found in folder '%s' for user '%s'\n", folderName, username)
+			} else {
+				fmt.Printf("Files in folder '%s' for user '%s':\n", folderName, username)
+				for _, file := range files {
+					fmt.Printf("- %s\n", file)
+				}
+			}
+		case "help":
+			fmt.Println("Commands:")
+			fmt.Println("  register <username>")
+			fmt.Println("  delete <username>")
+			fmt.Println("  list [prefix]")
+			fmt.Println("  create-folder <username> <foldername> [description]")
+			fmt.Println("  delete-folder <username> <foldername>")
+			fmt.Println("  list-folders <username>")
+			fmt.Println("  create-file <username> <foldername> <filename> <description>")
+			fmt.Println("  delete-file <username> <foldername> <filename>")
+			fmt.Println("  list-files <username> <foldername>")
+			fmt.Println("  help")
+			fmt.Println("  exit")
 		default:
 			fmt.Println("Unknown command")
 		}

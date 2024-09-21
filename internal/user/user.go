@@ -30,14 +30,14 @@ func NewUser(username string) (*User, error) {
 // validateUsername checks if the username is valid
 func validateUsername(username string) error {
 	if len(username) == 0 {
-		return errors.New("username cannot be empty")
+		return errors.New("Username cannot be empty.")
 	}
 	if len(username) > 50 {
-		return errors.New("username cannot be longer than 50 characters")
+		return errors.New("The " + username + " is too long.")
 	}
 	for _, char := range username {
 		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char == '_' || char == '-') {
-			return errors.New("username can only contain alphanumeric characters, underscores, and hyphens")
+			return errors.New("The " + username + " contain invalid chars.")
 		}
 	}
 	return nil

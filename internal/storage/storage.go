@@ -7,6 +7,7 @@ import (
 
 	"github.com/fatbrother/virtual-file-system/internal/user"
 	"github.com/fatbrother/virtual-file-system/internal/folder"
+	"github.com/fatbrother/virtual-file-system/internal/file"
 	"github.com/fatbrother/virtual-file-system/pkg/trie"
 )
 
@@ -30,7 +31,7 @@ func (s *Storage) AddUser(username string) error {
 
 	lowercaseUsername := strings.ToLower(username)
 	if _, exists := s.users.Search(lowercaseUsername); exists {
-		return errors.New("user already exists")
+		return errors.New("The " + username + " has already existed.")
 	}
 
 	newUser, err := user.NewUser(username)
@@ -54,7 +55,7 @@ func (s *Storage) GetUser(username string) (*user.User, error) {
 		}
 		return nil, errors.New("invalid user data")
 	}
-	return nil, errors.New("user not found")
+	return nil, errors.New("The " + username + " not found.")
 }
 
 
@@ -65,7 +66,7 @@ func (s *Storage) DeleteUser(username string) error {
 
 	lowercaseUsername := strings.ToLower(username)
 	if deleted := s.users.Delete(lowercaseUsername); !deleted {
-		return errors.New("user not found")
+		return errors.New("The " + username + " not found.")
 	}
 	return nil
 }
@@ -95,7 +96,7 @@ func (s *Storage) CreateFolder(username, folderName, description string) error {
 
 	lowercaseFolderName := strings.ToLower(folderName)
 	if _, exists := user.Folders.Search(lowercaseFolderName); exists {
-		return errors.New("folder already exists")
+		return errors.New("The " + folderName + " has already existed.")
 	}
 
 	newFolder, err := folder.NewFolder(folderName, description)
@@ -119,7 +120,7 @@ func (s *Storage) DeleteFolder(username, folderName string) error {
 
 	lowercaseFolderName := strings.ToLower(folderName)
 	if deleted := user.Folders.Delete(lowercaseFolderName); !deleted {
-		return errors.New("folder not found")
+		return errors.New("The " + folderName + " not found.")
 	}
 
 	return nil
@@ -152,5 +153,92 @@ func (s *Storage) getUserNoLock(username string) (*user.User, error) {
 		}
 		return nil, errors.New("invalid user data")
 	}
-	return nil, errors.New("user not found")
+	return nil, errors.New("The " + username + " not found.")
+}
+
+// CreateFile creates a new file in a folder for a user
+func (s *Storage) CreateFile(username, folderName, fileName, description string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, err := s.getUserNoLock(username)
+	if err != nil {
+		return err
+	}
+
+	folder, err := s.getFolderNoLock(user, folderName)
+	if err != nil {
+		return err
+	}
+
+	lowercaseFileName := strings.ToLower(fileName)
+	if _, exists := folder.Files.Search(lowercaseFileName); exists {
+		return errors.New("The " + fileName + " has already existed.")
+	}
+
+	newFile, err := file.NewFile(fileName, description)
+	if err != nil {
+		return err
+	}
+
+	folder.Files.Insert(lowercaseFileName, newFile)
+	return nil
+}
+
+// DeleteFile deletes a file from a folder for a user
+func (s *Storage) DeleteFile(username, folderName, fileName string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	user, err := s.getUserNoLock(username)
+	if err != nil {
+		return err
+	}
+
+	folder, err := s.getFolderNoLock(user, folderName)
+	if err != nil {
+		return err
+	}
+
+	lowercaseFileName := strings.ToLower(fileName)
+	if deleted := folder.Files.Delete(lowercaseFileName); !deleted {
+		return errors.New("The " + fileName + " not found.")
+	}
+
+	return nil
+}
+
+// ListFiles returns a list of all files in a folder for a user
+func (s *Storage) ListFiles(username, folderName string) ([]string, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	user, err := s.getUserNoLock(username)
+	if err != nil {
+		return nil, err
+	}
+
+	folder, err := s.getFolderNoLock(user, folderName)
+	if err != nil {
+		return nil, err
+	}
+
+	results := folder.Files.PrefixSearch("")
+	fileNames := make([]string, 0, len(results))
+	for fileName := range results {
+		fileNames = append(fileNames, fileName)
+	}
+	return fileNames, nil
+}
+
+// getFolderNoLock retrieves a folder
+func (s *Storage) getFolderNoLock(user *user.User, folderName string) (*folder.Folder, error) {
+	lowercaseFolderName := strings.ToLower(folderName)
+	if value, exists := user.Folders.Search(lowercaseFolderName); exists {
+		if folder, ok := value.(*folder.Folder); ok {
+			return folder, nil
+		}
+		return nil, errors.New("invalid folder data")
+	}
+	return nil, errors.New("The " + folderName + " not found.")
 }
