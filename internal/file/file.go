@@ -32,7 +32,7 @@ func NewFile(name, description string) (*File, error) {
 func ValidateFileName(name string) error {
 	validators := []validator.Validator{
 		validator.NewLengthValidator(1, 50),
-		validator.NewPatternValidator("^[a-zA-Z0-9_-]+$"),
+		validator.NewPatternValidator("^[a-zA-Z0-9_\\-\\.]+$"),
 	}
 
 	for _, v := range validators {
