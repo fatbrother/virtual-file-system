@@ -4,13 +4,15 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/fatbrother/virtual-file-system/pkg/trie"
 )
 
 // User represents a user in the virtual file system
 type User struct {
 	Username  string
 	CreatedAt time.Time
-	// Folders   map[string]*Folder
+	Folders   *trie.Trie
 }
 
 // NewUser creates a new User with the given username
@@ -21,7 +23,7 @@ func NewUser(username string) (*User, error) {
 	return &User{
 		Username:  strings.ToLower(username),
 		CreatedAt: time.Now(),
-		// Folders:   make(map[string]*Folder),
+		Folders:   trie.NewTrie(),
 	}, nil
 }
 
