@@ -53,20 +53,6 @@ func main() {
             } else {
                 fmt.Printf("User %s deleted successfully\n", username)
             }
-        case "list":
-            prefix := ""
-            if len(args) > 1 {
-                prefix = args[1]
-            }
-            users := s.ListUsers(prefix)
-            if len(users) == 0 {
-                fmt.Println("No users found")
-            } else {
-                fmt.Println("Users:")
-                for _, user := range users {
-                    fmt.Printf("- %s\n", user.Format())
-                }
-            }
         case "create-folder":
             if len(args) < 3 {
                 fmt.Fprintln(os.Stderr, "Usage: create-folder <username> <foldername> [description]")

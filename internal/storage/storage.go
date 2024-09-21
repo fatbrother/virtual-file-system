@@ -71,24 +71,6 @@ func (s *Storage) DeleteUser(username string) error {
     return nil
 }
 
-// ListUsers returns a list of all usernames with the given prefix
-func (s *Storage) ListUsers(prefix string) ([]user.User, error) {
-    s.mu.RLock()
-    defer s.mu.RUnlock()
-
-    results := s.users.PrefixSearch(strings.ToLower(prefix))
-    users := make([]user.User, 0, len(results))
-
-    for _, value := range results {
-        if u, ok := value.(*user.User); ok {
-            users = append(users, *u)
-        } else {
-            return nil, errors.New("invalid user data")
-        }
-    }
-    return users, nil
-}
-
 // CreateFolder creates a new folder for a user
 func (s *Storage) CreateFolder(username, folderName, description string) error {
     s.mu.Lock()

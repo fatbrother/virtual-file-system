@@ -43,8 +43,3 @@ func validateUsername(username string) error {
 
 	return nil
 }
-
-// Format prints the user details
-func (u *User) Format() string {
-	return u.Username + " " + u.CreatedAt.Format(time.RFC3339)
-}
