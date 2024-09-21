@@ -4,6 +4,8 @@ import (
 	"errors"
 	"strings"
 	"time"
+
+	"github.com/fatbrother/virtual-file-system/pkg/validator"
 )
 
 // File represents a file in the virtual file system
@@ -28,16 +30,16 @@ func NewFile(name, description string) (*File, error) {
 
 // ValidateFileName checks if the file name is valid
 func ValidateFileName(name string) error {
-	if len(name) == 0 {
-		return errors.New("file name cannot be empty")
+	validators := []validator.Validator{
+		validator.NewLengthValidator(1, 50),
+		validator.NewPatternValidator("^[a-zA-Z0-9_-]+$"),
 	}
-	if len(name) > 50 {
-		return errors.New("file name cannot be longer than 50 characters")
-	}
-	for _, char := range name {
-		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char == '_' || char == '-' || char == '.') {
-			return errors.New("file name can only contain alphanumeric characters, underscores, hyphens, and dots")
+
+	for _, v := range validators {
+		if pass := v.Validate(name); !pass {
+			return errors.New("The " + name + " is invalid.")
 		}
 	}
+
 	return nil
 }

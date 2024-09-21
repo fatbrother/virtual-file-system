@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/fatbrother/virtual-file-system/pkg/trie"
+	"github.com/fatbrother/virtual-file-system/pkg/validator"
 )
 
 // Folder represents a folder in the virtual file system
@@ -31,16 +32,16 @@ func NewFolder(name, description string) (*Folder, error) {
 
 // validateFolderName checks if the folder name is valid
 func validateFolderName(name string) error {
-	if len(name) == 0 {
-		return errors.New("folder name cannot be empty")
+	validators := []validator.Validator{
+		validator.NewLengthValidator(1, 50),
+		validator.NewPatternValidator("^[a-zA-Z0-9_-]+$"),
 	}
-	if len(name) > 50 {
-		return errors.New("folder name cannot be longer than 50 characters")
-	}
-	for _, char := range name {
-		if !((char >= 'a' && char <= 'z') || (char >= 'A' && char <= 'Z') || (char >= '0' && char <= '9') || char == '_' || char == '-' || char == '.') {
-			return errors.New("folder name can only contain alphanumeric characters, underscores, hyphens, and dots")
+
+	for _, v := range validators {
+		if pass := v.Validate(name); !pass {
+			return errors.New("The " + name + " is invalid.")
 		}
 	}
+
 	return nil
 }

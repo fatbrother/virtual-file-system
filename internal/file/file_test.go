@@ -11,13 +11,13 @@ func TestNewFile(t *testing.T) {
 		description	string
 		wantErr		bool
 	}{
-		{"Valid file name", "validfile.txt", "A valid file", false},
+		{"Valid file name", "validfile", "A valid file", false},
 		{"Empty file name", "", "Empty file", true},
 		{"Too long file name", "thisfilenameiswaytoolongandshouldfailvalidation_aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa.txt", "Too long file name", true},
 		{"Invalid characters", "**&&^%$#@!", "Invalid file name", true},
-		{"Valid with numbers", "file123.txt", "File with numbers", false},
-		{"Valid with underscore", "valid_file.txt", "File with underscore", false},
-		{"Valid with hyphen", "valid-file.txt", "File with hyphen", false},
+		{"Valid with numbers", "file123", "File with numbers", false},
+		{"Valid with underscore", "valid_file", "File with underscore", false},
+		{"Valid with hyphen", "valid-file", "File with hyphen", false},
 	}
 
 	for _, tt := range tests {
