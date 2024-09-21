@@ -64,7 +64,7 @@ func main() {
             } else {
                 fmt.Println("Users:")
                 for _, user := range users {
-                    fmt.Printf("- %s\n", user)
+                    fmt.Printf("- %s\n", user.Format())
                 }
             }
         case "create-folder":
@@ -123,7 +123,7 @@ func main() {
             } else {
                 fmt.Printf("Folders for user %s:\n", username)
                 for _, folder := range folders {
-                    fmt.Printf("- %s\n", folder)
+                    fmt.Printf("- %s\n", folder.Format())
                 }
             }
         case "create-file":
@@ -182,7 +182,7 @@ func main() {
             } else {
                 fmt.Printf("Files in folder %s for user %s:\n", folderName, username)
                 for _, file := range files {
-                    fmt.Printf("- %s\n", file)
+                    fmt.Printf("- %s\n", file.Format())
                 }
             }
         case "help":

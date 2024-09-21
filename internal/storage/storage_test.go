@@ -5,6 +5,10 @@ import (
 	"testing"
 	"time"
 	"sort"
+
+	"github.com/fatbrother/virtual-file-system/internal/file"
+	"github.com/fatbrother/virtual-file-system/internal/user"
+	"github.com/fatbrother/virtual-file-system/internal/folder"
 )
 
 func TestStorage_AddUser(t *testing.T) {
@@ -89,21 +93,29 @@ func TestStorage_ListUsers(t *testing.T) {
 	tests := []struct {
 		name   string
 		prefix string
-		want   []string
+		want   []user.User
 	}{
-		{"All users", "", []string{"admin1", "user1", "user2"}},
-		{"User prefix", "user", []string{"user1", "user2"}},
-		{"Admin prefix", "admin", []string{"admin1"}},
-		{"Non-existent prefix", "nonexistent", []string{}},
+		{"All users", "", []user.User{{Username: "admin1"}, {Username: "user1"}, {Username: "user2"}}},
+		{"User prefix", "user", []user.User{{Username: "user1"}, {Username: "user2"}}},
+		{"Admin prefix", "admin", []user.User{{Username: "admin1"}}},
+		{"Non-existent prefix", "nonexistent", []user.User{}},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := s.ListUsers(tt.prefix)
-			sort.Strings(got)
-			sort.Strings(tt.want)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Storage.ListUsers() = %v, want %v", got, tt.want)
+			got, err := s.ListUsers(tt.prefix)
+			if err != nil {
+				t.Errorf("Storage.ListUsers() error = %v", err)
+				return
+			}
+
+			sort.Slice(got, func(i, j int) bool { return got[i].Username < got[j].Username })
+			sort.Slice(tt.want, func(i, j int) bool { return tt.want[i].Username < tt.want[j].Username })
+
+			for i := range got {
+				if got[i].Username != tt.want[i].Username {
+					t.Errorf("Storage.ListUsers() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}
@@ -174,13 +186,37 @@ func TestStorage_ListFolders(t *testing.T) {
 		username  string
 		sortField string
 		sortOrder string
-		want      []string
+		want      []folder.Folder
 		wantErr   bool
 	}{
-		{"Sort by name asc", "testuser", "name", "asc", []string{"documents", "pictures"}, false},
-		{"Sort by name desc", "testuser", "name", "desc", []string{"pictures", "documents"}, false},
-		{"Sort by created asc", "testuser", "created", "asc", []string{"documents", "pictures"}, false},
-		{"Sort by created desc", "testuser", "created", "desc", []string{"pictures", "documents"}, false},
+		{
+			"Sort by name asc", "testuser", "name", "asc",
+			[]folder.Folder{
+				{Name: "documents", Description: "My documents"},
+				{Name: "pictures", Description: "My pictures"},
+			}, false,
+		},
+		{
+			"Sort by name desc", "testuser", "name", "desc",
+			[]folder.Folder{
+				{Name: "pictures", Description: "My pictures"},
+				{Name: "documents", Description: "My documents"},
+			}, false,
+		},
+		{
+			"Sort by created asc", "testuser", "created", "asc",
+			[]folder.Folder{
+				{Name: "documents", Description: "My documents"},
+				{Name: "pictures", Description: "My pictures"},
+			}, false,
+		},
+		{
+			"Sort by created desc", "testuser", "created", "desc",
+			[]folder.Folder{
+				{Name: "pictures", Description: "My pictures"},
+				{Name: "documents", Description: "My documents"},
+			}, false,
+		},
 		{"Non-existent user", "nonexistent", "name", "asc", nil, true},
 	}
 
@@ -191,8 +227,11 @@ func TestStorage_ListFolders(t *testing.T) {
 				t.Errorf("Storage.ListFolders() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Storage.ListFolders() = %v, want %v", got, tt.want)
+
+			for i := range got {
+				if got[i].Name != tt.want[i].Name {
+					t.Errorf("Storage.ListFolders() = %v, want %v", got, tt.want)
+				}
 			}
 		})
 	}
@@ -271,13 +310,37 @@ func TestStorage_ListFiles(t *testing.T) {
 		folderName string
 		sortField  string
 		sortOrder  string
-		want       []string
+		want       []file.File
 		wantErr    bool
 	}{
-		{"Sort by name asc", "testuser", "documents", "name", "asc", []string{"file1.txt", "file2.txt"}, false},
-		{"Sort by name desc", "testuser", "documents", "name", "desc", []string{"file2.txt", "file1.txt"}, false},
-		{"Sort by created asc", "testuser", "documents", "created", "asc", []string{"file1.txt", "file2.txt"}, false},
-		{"Sort by created desc", "testuser", "documents", "created", "desc", []string{"file2.txt", "file1.txt"}, false},
+		{
+			"Sort by name asc", "testuser", "documents", "name", "asc",
+			[]file.File{
+				{Name: "file1.txt", Description: "File description"},
+				{Name: "file2.txt", Description: "Another file description"},
+			}, false,
+		},
+		{
+			"Sort by name desc", "testuser", "documents", "name", "desc",
+			[]file.File{
+				{Name: "file2.txt", Description: "Another file description"},
+				{Name: "file1.txt", Description: "File description"},
+			}, false,
+		},
+		{
+			"Sort by created asc", "testuser", "documents", "created", "asc",
+			[]file.File{
+				{Name: "file1.txt", Description: "File description"},
+				{Name: "file2.txt", Description: "Another file description"},
+			}, false,
+		},
+		{
+			"Sort by created desc", "testuser", "documents", "created", "desc",
+			[]file.File{
+				{Name: "file2.txt", Description: "Another file description"},
+				{Name: "file1.txt", Description: "File description"},
+			}, false,
+		},
 		{"Non-existent folder", "testuser", "nonexistent", "name", "asc", nil, true},
 		{"Non-existent user", "nonexistent", "documents", "name", "asc", nil, true},
 	}
@@ -289,6 +352,11 @@ func TestStorage_ListFiles(t *testing.T) {
 				t.Errorf("Storage.ListFiles() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
+
+			for i := range got {
+				tt.want[i].CreatedAt = got[i].CreatedAt
+			}
+
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Storage.ListFiles() = %v, want %v", got, tt.want)
 			}

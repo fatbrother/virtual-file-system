@@ -43,3 +43,8 @@ func ValidateFileName(name string) error {
 
 	return nil
 }
+
+// Format prints the file details
+func (f *File) Format() string {
+	return f.Name + " " + f.Description + " " + f.CreatedAt.Format(time.RFC3339)
+}

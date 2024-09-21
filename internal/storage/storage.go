@@ -72,16 +72,21 @@ func (s *Storage) DeleteUser(username string) error {
 }
 
 // ListUsers returns a list of all usernames with the given prefix
-func (s *Storage) ListUsers(prefix string) []string {
+func (s *Storage) ListUsers(prefix string) ([]user.User, error) {
     s.mu.RLock()
     defer s.mu.RUnlock()
 
     results := s.users.PrefixSearch(strings.ToLower(prefix))
-    usernames := make([]string, 0, len(results))
-    for username := range results {
-        usernames = append(usernames, username)
+    users := make([]user.User, 0, len(results))
+
+    for _, value := range results {
+        if u, ok := value.(*user.User); ok {
+            users = append(users, *u)
+        } else {
+            return nil, errors.New("invalid user data")
+        }
     }
-    return usernames
+    return users, nil
 }
 
 // CreateFolder creates a new folder for a user
@@ -127,7 +132,7 @@ func (s *Storage) DeleteFolder(username, folderName string) error {
 }
 
 // ListFolders returns a list of all folders for a user with sorting options
-func (s *Storage) ListFolders(username, sortField, sortOrder string) ([]string, error) {
+func (s *Storage) ListFolders(username, sortField, sortOrder string) ([]folder.Folder, error) {
     s.mu.RLock()
     defer s.mu.RUnlock()
 
@@ -137,29 +142,29 @@ func (s *Storage) ListFolders(username, sortField, sortOrder string) ([]string, 
     }
 
     results := user.Folders.PrefixSearch("")
-    folderNames := make([]string, 0, len(results))
-    for folderName := range results {
-        folderNames = append(folderNames, folderName)
+    folders := make([]folder.Folder, 0, len(results))
+    for _, value := range results {
+        if f, ok := value.(*folder.Folder); ok {
+            folders = append(folders, *f)
+        } else {
+            return nil, errors.New("invalid folder data")
+        }
     }
 
-    sort.Slice(folderNames, func(i, j int) bool {
+    sort.Slice(folders, func(i, j int) bool {
         if sortField == "created" {
-            folderI, _ := user.Folders.Search(folderNames[i])
-            folderJ, _ := user.Folders.Search(folderNames[j])
-            folderICreatedAt := folderI.(*folder.Folder).CreatedAt
-            folderJCreatedAt := folderJ.(*folder.Folder).CreatedAt
             if sortOrder == "asc" {
-                return folderICreatedAt.Before(folderJCreatedAt)
+                return folders[i].CreatedAt.Before(folders[j].CreatedAt)
             }
-            return folderJCreatedAt.Before(folderICreatedAt)
+            return folders[j].CreatedAt.Before(folders[i].CreatedAt)
         }
         if sortOrder == "asc" {
-            return folderNames[i] < folderNames[j]
+            return folders[i].Name < folders[j].Name
         }
-        return folderNames[i] > folderNames[j]
+        return folders[i].Name > folders[j].Name
     })
 
-    return folderNames, nil
+    return folders, nil
 }
 
 // CreateFile creates a new file in a folder for a user
@@ -215,7 +220,7 @@ func (s *Storage) DeleteFile(username, folderName, fileName string) error {
 }
 
 // ListFiles returns a list of all files in a folder for a user with sorting options
-func (s *Storage) ListFiles(username, folderName, sortField, sortOrder string) ([]string, error) {
+func (s *Storage) ListFiles(username, folderName, sortField, sortOrder string) ([]file.File, error) {
     s.mu.RLock()
     defer s.mu.RUnlock()
 
@@ -230,29 +235,27 @@ func (s *Storage) ListFiles(username, folderName, sortField, sortOrder string) (
     }
 
     results := folder.Files.PrefixSearch("")
-    fileNames := make([]string, 0, len(results))
-    for fileName := range results {
-        fileNames = append(fileNames, fileName)
+    files := make([]file.File, 0, len(results))
+    for _, value := range results {
+        if f, ok := value.(*file.File); ok {
+            files = append(files, *f)
+        }
     }
 
-    sort.Slice(fileNames, func(i, j int) bool {
+    sort.Slice(files, func(i, j int) bool {
         if sortField == "created" {
-            fileI, _ := folder.Files.Search(fileNames[i])
-            fileJ, _ := folder.Files.Search(fileNames[j])
-            fileICreatedAt := fileI.(*file.File).CreatedAt
-            fileJCreatedAt := fileJ.(*file.File).CreatedAt
             if sortOrder == "asc" {
-                return fileICreatedAt.Before(fileJCreatedAt)
+                return files[i].CreatedAt.Before(files[j].CreatedAt)
             }
-            return fileJCreatedAt.Before(fileICreatedAt)
+            return files[j].CreatedAt.Before(files[i].CreatedAt)
         }
         if sortOrder == "asc" {
-            return fileNames[i] < fileNames[j]
+            return files[i].Name < files[j].Name
         }
-        return fileNames[i] > fileNames[j]
+        return files[i].Name > files[j].Name
     })
 
-    return fileNames, nil
+    return files, nil
 }
 
 // getUserNoLock retrieves a user without locking (assumes caller holds the lock)
